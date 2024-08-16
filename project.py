@@ -6,17 +6,19 @@ import re
 
 COMPUTER_LIMIT = 16
 SAVE_FILE_PATH = "profiles.csv"
+debug = True
 
 
 def main():
-    intro()
+    send_message("Let's Play Blackjack!")
     while True:
         selection = menu()
         play_game(selection)
 
 
-def intro():
-    print("Let's Play Blackjack!")
+def send_message(message):
+    if not debug:
+        print(message)
 
 
 def get_menu_selection(message="Please input your selection: ", menu_limit=2):
@@ -36,7 +38,7 @@ def menu():
         try:
             return get_menu_selection(menu_limit=3)
         except ValueError:
-            print("I'm sorry but your selection was invalid, please enter the number of your selection")
+            send_message("I'm sorry but your selection was invalid, please enter the number of your selection")
 
 
 def play_game(num):
@@ -46,22 +48,26 @@ def play_game(num):
         case 2:
             display_profiles()
         case 3:
-            print("Thank you for playing!")
+            send_message("Thank you for playing!")
             sys.exit(0)
 
 
 def display_profiles():
     data = get_load_data()
-    for name, balance in data.items():
-        print(name, balance)
+    if len(data) > 0:
+        for name, balance in data.items():
+            print(name, balance)
+    else:
+        send_message("No Saved Profiles")
 
 
 def get_bet(limit):
+    send_message(f"Current Balance: {limit}")
     while True:
         try:
             return get_menu_selection("How much would you like to bet?", limit)
         except ValueError:
-            print("I'm sorry but your selection was invalid")
+            send_message("I'm sorry but your selection was invalid")
 
 
 def print_hand(hand, dealer=False):
@@ -98,13 +104,13 @@ def evaluate_hand(hand, dealer=False):
 
 def get_hand_choice():
     while True:
-        print("""What do you want to do?
+        send_message("""What do you want to do?
 1: hit
 2: stay""")
         try:
             return get_menu_selection()
         except ValueError:
-            print("I'm sorry but your selection was invalid, please enter the number of your selection")
+            send_message("I'm sorry but your selection was invalid, please enter the number of your selection")
 
 
 def play_blackjack():
@@ -117,65 +123,65 @@ def play_blackjack():
         player_one.bet(bet)
         player_hand = [current_deck.deal_card(), current_deck.deal_card()]
         dealer_hand = [current_deck.deal_card(), current_deck.deal_card()]
-        print("dealer:")
+        send_message("dealer:")
         print_hand(dealer_hand, True)
-        print("Player:")
+        send_message("Player:")
         print_hand(player_hand)
         playing = True
         while playing:
             choice = get_hand_choice()
             if choice == 1:
-                print("hit!")
+                send_message("hit!")
                 player_hand.append(current_deck.deal_card())
                 if evaluate_hand(player_hand) > 21:
-                    print("bust!")
+                    send_message("bust!")
                     playing = False
             elif choice == 2:
-                print("stay")
+                send_message("stay")
                 playing = False
             print_hand(player_hand)
-        print("dealer's Turn!")
+        send_message("dealer's Turn!")
         ai_turn = True
         while ai_turn:
             p = evaluate_hand(player_hand)
             c = evaluate_hand(dealer_hand)
             if c < p <= 21 and c <= COMPUTER_LIMIT:
-                print("dealer Hits")
+                send_message("dealer Hits")
                 dealer_hand.append(current_deck.deal_card())
                 if evaluate_hand(dealer_hand) > 21:
-                    print("dealer busts")
+                    send_message("dealer busts")
                     ai_turn = False
             else:
-                print("dealer stays")
+                send_message("dealer stays")
                 ai_turn = False
             print_hand(dealer_hand)
-        print("dealer done")
+        send_message("dealer done")
         winner = compare_hands(player_hand, dealer_hand)
         if winner:
             player_one.payout(bet*2)
         else:
             if player_one.balance <= 0:
-                print("You are out of money, Have 100 points")
+                send_message("You are out of money, Have 100 points")
                 player_one.payout(100)
         again = play_again(player_one.balance)
         if again == 2:
-            print("Saving Profile")
+            send_message("Saving Profile")
             save_game(player_one)
             return
         else:
-            print("Then lets play another hand!")
+            send_message("Then lets play another hand!")
 
 
 def play_again(balance):
     while True:
-        print(f"Current Balance: {balance}")
-        print("""Would you like to play again?
+        send_message(f"Current Balance: {balance}")
+        send_message("""Would you like to play again?
             1: Yes
             2: No""")
         try:
             return get_menu_selection()
         except ValueError:
-            print("I'm sorry but your selection was invalid")
+            send_message("I'm sorry but your selection was invalid")
 
 
 def save_game(player_to_save):
@@ -184,9 +190,9 @@ def save_game(player_to_save):
     save_data(data)
 
 
-def save_data(data):
+def save_data(data,path=SAVE_FILE_PATH):
 
-    with open(SAVE_FILE_PATH, "a") as file:
+    with open(path, "a") as file:
         writer = csv.writer(file)
         for key in data.keys():
             writer.writerow([key, data[key]])
@@ -196,19 +202,19 @@ def compare_hands(player_hand, dealer_hand):
     p = evaluate_hand(player_hand)
     c = evaluate_hand(dealer_hand)
     if p > 21:
-        print("Player Busted! Dealer Wins!")
+        send_message("Player Busted! Dealer Wins!")
         return False
     elif c > 21:
-        print("Dealer Busted! Player Wins!")
+        send_message("Dealer Busted! Player Wins!")
         return True
     elif p > c:
-        print("player Wins!")
+        send_message("player Wins!")
         return True
     elif p <= c:
-        print("Dealer Wins!")
+        send_message("Dealer Wins!")
         return False
     else:
-        print("Tie! Dealer Wins!")
+        send_message("Tie! Dealer Wins!")
         return False
 
 
@@ -217,7 +223,7 @@ def init_player():
     if load_data:
         selection = load_selection()
     else:
-        print("no save data, creating new profile")
+        send_message("no save data, creating new profile")
         selection = 2
     if selection == 1:
         return check_load()
@@ -232,7 +238,7 @@ def check_load():
     if player_name in data.keys():
         return [player_name, data[player_name]]
     else:
-        print("no profile found creating new one")
+        send_message("no profile found creating new one")
         return [player_name, 100]
 
 
@@ -241,7 +247,7 @@ def get_name(message):
         try:
             return name_entry(message)
         except ValueError:
-            print("I'm sorry but your selection was invalid (1-15 chars alpha-numeric + ~!@#$%^&*'.,/_-")
+            send_message("I'm sorry but your selection was invalid (1-15 chars alpha-numeric + ~!@#$%^&*'.,/_-")
 
 
 def name_entry(message):
@@ -254,19 +260,19 @@ def name_entry(message):
 
 def load_selection():
     while True:
-        print("""would you like to load a profile or start a new profile?
+        send_message("""would you like to load a profile or start a new profile?
 1:Load Profile
 2:New""")
         try:
             return get_menu_selection()
         except ValueError:
-            print("I'm sorry but your selection was invalid, please enter the number of your selection")
+            send_message("I'm sorry but your selection was invalid, please enter the number of your selection")
 
 
-def get_load_data():
+def get_load_data(path=SAVE_FILE_PATH):
     load = {}
     try:
-        with open(SAVE_FILE_PATH, "r") as file:
+        with open(path, "r") as file:
             reader = csv.reader(file)
             for row in reader:
                 load[f"{row[0]}"] = int(row[1])
@@ -276,4 +282,5 @@ def get_load_data():
 
 
 if __name__ == "__main__":
+    debug = False
     main()
