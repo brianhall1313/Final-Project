@@ -113,56 +113,73 @@ def get_hand_choice():
             send_message("I'm sorry but your selection was invalid, please enter the number of your selection")
 
 
+def player_turn(player_one, dealer, current_deck):
+    send_message("Player's Turn")
+    while True:
+        choice = get_hand_choice()
+        if choice == 1:
+            send_message("hit!")
+            player_one.dealt(current_deck.deal_card())
+            if evaluate_hand(player_one.hand) > 21:
+                send_message("bust!")
+                return
+        elif choice == 2:
+            send_message("stay")
+            return
+        print_hands(player_one, dealer)
+
+
+def ai_turn(player_one, dealer, current_deck):
+    send_message("Dealer's Turn!")
+    while True:
+        p = evaluate_hand(player_one.hand)
+        c = evaluate_hand(dealer.hand)
+        if c < p <= 21 and c <= COMPUTER_LIMIT:
+            send_message("Dealer Hits")
+            dealer.dealt(current_deck.deal_card())
+            if evaluate_hand(dealer.hand) > 21:
+                send_message("Dealer busts")
+                return
+        else:
+            send_message("Dealer stays")
+            return
+
+        print_hands(player_one, dealer)
+
+
+def print_hands(player_one, dealer, final = False):
+    send_message("Dealer:")
+    print_hand(dealer.hand, not final)
+    send_message("Player:")
+    print_hand(player_one.hand)
+
+
 def play_blackjack():
     data = init_player()
     player_one = player.Player(data[0], data[1])
+    dealer = player.Player("Dealer", 0)
     while True:
         current_deck = deck.Deck()
         current_deck.shuffle()
         bet = get_bet(player_one.balance)
         player_one.bet(bet)
-        player_hand = [current_deck.deal_card(), current_deck.deal_card()]
-        dealer_hand = [current_deck.deal_card(), current_deck.deal_card()]
-        send_message("dealer:")
-        print_hand(dealer_hand, True)
-        send_message("Player:")
-        print_hand(player_hand)
-        playing = True
-        while playing:
-            choice = get_hand_choice()
-            if choice == 1:
-                send_message("hit!")
-                player_hand.append(current_deck.deal_card())
-                if evaluate_hand(player_hand) > 21:
-                    send_message("bust!")
-                    playing = False
-            elif choice == 2:
-                send_message("stay")
-                playing = False
-            print_hand(player_hand)
-        send_message("dealer's Turn!")
-        ai_turn = True
-        while ai_turn:
-            p = evaluate_hand(player_hand)
-            c = evaluate_hand(dealer_hand)
-            if c < p <= 21 and c <= COMPUTER_LIMIT:
-                send_message("dealer Hits")
-                dealer_hand.append(current_deck.deal_card())
-                if evaluate_hand(dealer_hand) > 21:
-                    send_message("dealer busts")
-                    ai_turn = False
-            else:
-                send_message("dealer stays")
-                ai_turn = False
-            print_hand(dealer_hand)
-        send_message("dealer done")
-        winner = compare_hands(player_hand, dealer_hand)
+        player_one.dealt(current_deck.deal_card())
+        player_one.dealt(current_deck.deal_card())
+        dealer.dealt(current_deck.deal_card())
+        dealer.dealt(current_deck.deal_card())
+        print_hands(player_one, dealer)
+        player_turn(player_one, dealer, current_deck)
+        ai_turn(player_one, dealer , current_deck)
+        print_hands(player_one, dealer, True)
+        winner = compare_hands(player_one.hand, dealer.hand)
         if winner:
             player_one.payout(bet*2)
         else:
             if player_one.balance <= 0:
                 send_message("You are out of money, Have 100 points")
                 player_one.payout(100)
+        player_one.clear_hand()
+        dealer.clear_hand()
         again = play_again(player_one.balance)
         if again == 2:
             send_message("Saving Profile")
@@ -192,7 +209,7 @@ def save_game(player_to_save):
 
 def save_data(data,path=SAVE_FILE_PATH):
 
-    with open(path, "a") as file:
+    with open(path, "w") as file:
         writer = csv.writer(file)
         for key in data.keys():
             writer.writerow([key, data[key]])
@@ -208,7 +225,7 @@ def compare_hands(player_hand, dealer_hand):
         send_message("Dealer Busted! Player Wins!")
         return True
     elif p > c:
-        send_message("player Wins!")
+        send_message("Player Wins!")
         return True
     elif p <= c:
         send_message("Dealer Wins!")
@@ -232,9 +249,20 @@ def init_player():
         return [name, 100]
 
 
+def print_load_names(data):
+    if data == {}:
+        print("No Saved Profiles")
+    else:
+        print("Profiles: ")
+        for key in data.keys():
+            print(key)
+
+
+
 def check_load():
-    player_name = get_name("Please enter the name of the profile you would like to load")
     data = get_load_data()
+    print_load_names(data)
+    player_name = get_name("Please enter the name of the profile you would like to load")
     if player_name in data.keys():
         return [player_name, data[player_name]]
     else:
@@ -247,12 +275,12 @@ def get_name(message):
         try:
             return name_entry(message)
         except ValueError:
-            send_message("I'm sorry but your selection was invalid (1-15 chars alpha-numeric + ~!@#$%^&*'.,/_-")
+            send_message("I'm sorry but your selection was invalid (1-15 chars alpha-numeric + ~!@#$%^&*'.,()/_-)")
 
 
 def name_entry(message):
     name = input(message).strip()
-    if re.search(r"^[\w ~!@#$%^&*'.,/_-]{1,15}$", name):
+    if re.search(r"^[\w ~!@#$%^&*'.,()/_-]{1,15}$", name):
         return name
     else:
         raise ValueError
