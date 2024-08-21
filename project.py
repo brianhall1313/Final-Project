@@ -3,6 +3,7 @@ import csv
 import deck
 import player
 import re
+import time
 
 COMPUTER_LIMIT = 16
 SAVE_FILE_PATH = "profiles.csv"
@@ -145,6 +146,7 @@ def ai_turn(player_one, dealer, current_deck):
             return
 
         print_hands(player_one, dealer)
+        time.sleep(1)
 
 
 def print_hands(player_one, dealer, final = False):
@@ -169,6 +171,7 @@ def play_blackjack():
         dealer.dealt(current_deck.deal_card())
         print_hands(player_one, dealer)
         player_turn(player_one, dealer, current_deck)
+        time.sleep(1)
         ai_turn(player_one, dealer , current_deck)
         print_hands(player_one, dealer, True)
         winner = compare_hands(player_one.hand, dealer.hand)
@@ -303,7 +306,8 @@ def get_load_data(path=SAVE_FILE_PATH):
         with open(path, "r") as file:
             reader = csv.reader(file)
             for row in reader:
-                load[f"{row[0]}"] = int(row[1])
+                if len(row) > 1:
+                    load[f"{row[0]}"] = int(row[1])
     except FileNotFoundError:
         pass
     return load
