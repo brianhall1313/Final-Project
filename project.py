@@ -6,6 +6,7 @@ import re
 import time
 
 COMPUTER_LIMIT = 16
+COMPUTER_WAIT_TIME = 2
 SAVE_FILE_PATH = "profiles.csv"
 debug = True
 
@@ -106,8 +107,8 @@ def evaluate_hand(hand, dealer=False):
 def get_hand_choice():
     while True:
         send_message("""What do you want to do?
-1: hit
-2: stay""")
+            1: hit
+            2: stay""")
         try:
             return get_menu_selection()
         except ValueError:
@@ -122,9 +123,11 @@ def player_turn(player_one, dealer, current_deck):
             send_message("hit!")
             player_one.dealt(current_deck.deal_card())
             if evaluate_hand(player_one.hand) > 21:
+                print_hands(player_one, dealer)
                 send_message("bust!")
                 return
         elif choice == 2:
+            print_hands(player_one, dealer)
             send_message("stay")
             return
         print_hands(player_one, dealer)
@@ -139,14 +142,16 @@ def ai_turn(player_one, dealer, current_deck):
             send_message("Dealer Hits")
             dealer.dealt(current_deck.deal_card())
             if evaluate_hand(dealer.hand) > 21:
+                print_hands(player_one, dealer)
                 send_message("Dealer busts")
                 return
         else:
+            print_hands(player_one, dealer)
             send_message("Dealer stays")
             return
 
         print_hands(player_one, dealer)
-        time.sleep(1)
+        time.sleep(COMPUTER_WAIT_TIME)
 
 
 def print_hands(player_one, dealer, final = False):
@@ -171,7 +176,6 @@ def play_blackjack():
         dealer.dealt(current_deck.deal_card())
         print_hands(player_one, dealer)
         player_turn(player_one, dealer, current_deck)
-        time.sleep(1)
         ai_turn(player_one, dealer , current_deck)
         print_hands(player_one, dealer, True)
         winner = compare_hands(player_one.hand, dealer.hand)
@@ -230,7 +234,7 @@ def compare_hands(player_hand, dealer_hand):
     elif p > c:
         send_message("Player Wins!")
         return True
-    elif p <= c:
+    elif p < c:
         send_message("Dealer Wins!")
         return False
     else:
@@ -248,8 +252,18 @@ def init_player():
     if selection == 1:
         return check_load()
     elif selection == 2:
-        name = get_name("Please Enter a Name: ")
+        name = new_name()
         return [name, 100]
+
+
+def new_name():
+    while True:
+        name = get_name("Please Enter a Name: ")
+        data = get_load_data()
+        if name in data.keys():
+            send_message("I'm sorry that name is taken")
+        else:
+            return name
 
 
 def print_load_names(data):
